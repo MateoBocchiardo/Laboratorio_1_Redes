@@ -33,13 +33,82 @@ class Client:
     # Método para enviar una petición al servidor
     def _send_request(self, request):
         message = json.dumps(request)
-        self.sock.sendall(message.encode('utf-8'))
+        # Utilizo sendall, podría usar send y un bucle para asegurarme de que se envíe todo el mensaje
+        # self.sock.sendall(message.encode('utf-8'))
+
+        # Inicializar un contador para llevar la cuenta de los bytes enviados
+        total_sent = 0
+
+        # Continuar enviando hasta que se hayan enviado todos los bytes del mensaje
+        while total_sent < len(message):
+            # Enviar los bytes restantes del mensaje, comenzando desde donde se quedó en la iteración anterior
+            sent = self.sock.send(message[total_sent:].encode('utf-8'))
+
+            # Si no se envía ningún byte, significa que la conexión se ha cerrado inesperadamente
+            if sent == 0:
+                raise RuntimeError("Conexión cerrada")
+
+            # Actualizar el total de bytes enviados
+            total_sent += sent
+
 
     # Método para recibir la respuesta del servidor
     def _receive_response(self):
+        # Utilizo un buffer de 4096 bytes, se puede ajustar según sea necesario
+        buffer_size = 4096
+        response_chunks = []
+
+        while True:
+            # Recibe los datos del servidor en fragmentos
+            chunk = self.sock.recv(buffer_size)
+            if not chunk:
+                # Si no hay más datos, salir del bucle
+                break
+            response_chunks.append(chunk)
+
+            # Chequea si la respuesta es un JSON válido
+            try:
+                response_data = json.loads(b''.join(response_chunks).decode('utf-8'))
+                break
+            except json.JSONDecodeError:
+                # Si no es completo cointinuar recibiendo datos
+                continue
+
+        # Convertir la respuesta a un diccionario
+        response_data = json.loads(b''.join(response_chunks).decode('utf-8'))
+
+        # Verifica si hay un error en la respuesta
+        if 'error' in response_data:
+            raise Exception(f"Error {response_data['error']['code']}: {response_data['error']['message']} - {response_data['error'].get('data', '')}")
+
+        return response_data.get('result')
+    """
+    # Otra manera de hacerlo
+    def _receive_response(self):
         # Recibe la respuesta del servidor (4096 bytes, se puede cambiar) y la convierte a un diccionario
         response = self.sock.recv(4096)
-        return json.loads(response.decode('utf-8'))['result']
+
+
+        chunks = []
+        bytes_recd = 0
+        while bytes_recd < 4096:
+            chunk = self.sock.recv(4096 - bytes_recd)
+            if chunk == b'':
+                raise RuntimeError("Error de conexión")
+            chunks.append(chunk)
+            bytes_recd = bytes_recd + len(chunk)
+            print(bytes_recd)
+
+        response = b''.join(chunks)
+
+        response_data = json.loads(response.decode('utf-8'))
+
+        # Verifica si hay un error en la respuesta
+        if 'error' in response_data:
+            raise Exception(f"Error {response_data['error']['code']}: {response_data['error']['message']} - {response_data['error'].get('data', '')}")
+
+        return response_data.get('result')
+    """
 
     # Método para cerrar la conexión con el servidor
     def close(self):
