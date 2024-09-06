@@ -32,7 +32,7 @@ class Client:
 
     # Método para enviar una petición al servidor
     def _send_request(self, request):
-        message = json.dumps(request)
+        message = json.dumps(request).encode('utf-8')
         # Utilizo sendall, podría usar send y un bucle para asegurarme de que se envíe todo el mensaje
         # self.sock.sendall(message.encode('utf-8'))
 
@@ -42,7 +42,7 @@ class Client:
         # Continuar enviando hasta que se hayan enviado todos los bytes del mensaje
         while total_sent < len(message):
             # Enviar los bytes restantes del mensaje, comenzando desde donde se quedó en la iteración anterior
-            sent = self.sock.send(message[total_sent:].encode('utf-8'))
+            sent = self.sock.send(message[total_sent:])
 
             # Si no se envía ningún byte, significa que la conexión se ha cerrado inesperadamente
             if sent == 0:

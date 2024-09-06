@@ -19,13 +19,14 @@ class Server:
         # Crea un socket IPv4 y TCP
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.bind((self.address, self.port))
-        self.sock.listen() # No se especifica el número de conexiones en la cola
 
     def add_method(self, func):
         # Añade el método al diccionario de métodos
         self.methods[func.__name__] = func
 
     def serve(self):
+        # Se dispone a escuchar conexiones entrantes
+        self.sock.listen() # No se especifica el número de conexiones en la cola
         # Muestra la dirección y puerto en los que se está esperando conexiones
         print(f"Serving: {self.address}:{self.port}")
         while True:
