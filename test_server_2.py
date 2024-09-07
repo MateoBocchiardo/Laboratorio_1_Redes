@@ -16,6 +16,9 @@ def maximo_comun_divisor(a, b):
         a, b = b, a % b
     return a
 
+def reordenar(a, b, c, d):
+    return d, c, b ,a
+
 
 
 if __name__ == '__main__':
@@ -24,4 +27,5 @@ if __name__ == '__main__':
     server.add_method(concatenar)
     server.add_method(multiplicacion)
     server.add_method(maximo_comun_divisor)
+    server.add_method(reordenar)
     server.serve()

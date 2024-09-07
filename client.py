@@ -55,7 +55,7 @@ class Client:
     # Método para recibir la respuesta del servidor
     def _receive_response(self):
         # Utilizo un buffer de 4096 bytes, se puede ajustar según sea necesario
-        buffer_size = 4096
+        buffer_size = 10
         response_chunks = []
 
         while True:
@@ -82,33 +82,6 @@ class Client:
             raise Exception(f"Error {response_data['error']['code']}: {response_data['error']['message']} - {response_data['error'].get('data', '')}")
 
         return response_data.get('result')
-    """
-    # Otra manera de hacerlo
-    def _receive_response(self):
-        # Recibe la respuesta del servidor (4096 bytes, se puede cambiar) y la convierte a un diccionario
-        response = self.sock.recv(4096)
-
-
-        chunks = []
-        bytes_recd = 0
-        while bytes_recd < 4096:
-            chunk = self.sock.recv(4096 - bytes_recd)
-            if chunk == b'':
-                raise RuntimeError("Error de conexión")
-            chunks.append(chunk)
-            bytes_recd = bytes_recd + len(chunk)
-            print(bytes_recd)
-
-        response = b''.join(chunks)
-
-        response_data = json.loads(response.decode('utf-8'))
-
-        # Verifica si hay un error en la respuesta
-        if 'error' in response_data:
-            raise Exception(f"Error {response_data['error']['code']}: {response_data['error']['message']} - {response_data['error'].get('data', '')}")
-
-        return response_data.get('result')
-    """
 
     # Método para cerrar la conexión con el servidor
     def close(self):

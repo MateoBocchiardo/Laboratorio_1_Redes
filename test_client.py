@@ -18,5 +18,8 @@ if __name__ == '__main__':
 
     print(client_2.maximo_comun_divisor(12, 18)) # Debería imprimir 6
 
+    print(client_2.reordenar('a', 'b', 'c', 'd')) # Debería imprimir d, c, b, a
+
+
     client_1.close()
     client_2.close()

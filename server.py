@@ -3,6 +3,10 @@ import json
 import threading
 
 #Defino una clase Server
+
+# TO DO: Implementar respeustas de array a funciones
+
+
 class Server:
 
     #Constructor de la clase (Falta terminar)
@@ -35,11 +39,30 @@ class Server:
             threading.Thread(target=self._handle_client, args=(conn,)).start()
 
     def _handle_client(self, conn):
+
+        buffer_size = 10
+
         while True:
-            data = conn.recv(4096)
-            if not data:
+            response_chunks = []
+
+            while True:
+                # Recibe los datos del servidor en fragmentos
+                chunk = conn.recv(buffer_size)
+                response_chunks.append(chunk)
+
+                # Chequea si la respuesta es un JSON válido
+                try:
+                    data = b''.join(response_chunks).decode('utf-8')
+                    json_data = json.loads(data)
+                    break
+                except json.JSONDecodeError:
+                    # Si no es completo cointinuar recibiendo datos
+                    continue
+
+            if not json_data:
                 break
-            request = json.loads(data.decode('utf-8'))
+
+            request = json_data
             method = self.methods.get(request['method'])
             if method:
                 result = method(*request['params'])
@@ -48,7 +71,6 @@ class Server:
                     "result": result,
                     "id": request['id']
                 }
-                #conn.sendall(json.dumps(response).encode('utf-8')) NO SE PUEDE USAR sendall
 
                 total_sent = 0
                 message = json.dumps(response).encode('utf-8')
@@ -66,20 +88,3 @@ class Server:
     def close(self):
         self.sock.close()
 
-
-    """
-    # Funcion anterior
-    def serve(self):
-        #Socket IPv4 y TCP
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(self.host, self.port) #Asocio puerto y direccion al socket
-            s.listen() #Se escuchan conexiones entrantes
-            conn, addr = s.accept() #Bloquea ejecuiones y espera a una conexion
-            with conn:
-                print(f"Conexion establecida desde {addr}")
-                while True:
-                    data = conn.recv(1024) #si es vacio, se cierra la conexion
-                    if not data:
-                        break
-                    conn.sendall(data)
-    """
