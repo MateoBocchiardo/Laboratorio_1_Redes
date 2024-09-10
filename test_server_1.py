@@ -15,7 +15,10 @@ def string_mas_largo(*strings):
 
 if __name__ == '__main__':
 
-    server = Server('localhost', 5000)
+    # Terminales locales
+    # server = Server('localhost', 5000)
+
+    server = Server('200.0.0.10', 5000)
     server.add_method(suma)
     server.add_method(resta)
     server.add_method(string_mas_largo)

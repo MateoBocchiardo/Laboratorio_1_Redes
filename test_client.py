@@ -3,8 +3,12 @@ from client import connect
 
 if __name__ == '__main__':
 
-    client_1 = connect('localhost', 5000)
-    client_2 = connect('localhost', 5001)
+    # Terminales locales
+    #client_1 = connect('localhost', 5000)
+    #client_2 = connect('localhost', 5001)
+
+    client_1 = connect('200.0.0.10', 5000)
+    client_2 = connect('200.100.0.15', 5001)
 
     print(client_1.suma(9, 5))  # Debería imprimir 14
 
