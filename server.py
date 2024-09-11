@@ -45,12 +45,21 @@ class Server:
                 chunk = conn.recv(buffer_size)
                 response_chunks.append(chunk)
 
-                # Chequea si la respuesta es un JSON válido
-                try:
-                    data = b''.join(response_chunks).decode('utf-8')
-                    json_data = json.loads(data)
-                    break
-                except json.JSONDecodeError:
+                #Chequea si el buffer esta completo
+                if buffer.count('{') == buffer.count('}'):
+                    # Chequea si la respuesta es un JSON válido
+                    try:
+                        data = b''.join(response_chunks).decode('utf-8')
+                        json_data = json.loads(data)
+                        break
+                    except json.JSONDecodeError:
+                        response = {
+                            "jsonrpc": "2.0",
+                            "error": {"código": -32700, "mensaje": "Error de análisis"}
+                            "id": request['id']
+                        }
+                        self._send_response(response, conn)
+                else:
                     # Si no es completo cointinuar recibiendo datos
                     continue
 
