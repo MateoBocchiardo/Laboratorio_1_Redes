@@ -54,7 +54,7 @@ class Server:
                     except json.JSONDecodeError:
                         response = {
                             "jsonrpc": "2.0",
-                            "error": {"código": -32700, "mensaje": "Error de análisis"}
+                            "error": {"code": -32700, "message": "Error de análisis"},
                             "id": request['id']
                         }
                         self._send_response(response, conn)
