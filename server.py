@@ -44,12 +44,11 @@ class Server:
                 # Recibe los datos del servidor en fragmentos
                 chunk = conn.recv(buffer_size)
                 response_chunks.append(chunk)
-
+                data = b''.join(response_chunks).decode('utf-8')
                 #Chequea si el buffer esta completo
-                if buffer.count('{') == buffer.count('}'):
+                if data.count('{') == data.count('}'):
                     # Chequea si la respuesta es un JSON válido
                     try:
-                        data = b''.join(response_chunks).decode('utf-8')
                         json_data = json.loads(data)
                         break
                     except json.JSONDecodeError:
