@@ -14,15 +14,23 @@ class Client:
         # Atributo para otorgar un id único a cada petición
         self.request_id = 0
 
+    # Metodo para reconectar al servidor
+    def _setup_connection(self):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self.sock.connect((self.address, self.port))
+        except socket.error as e:
+            raise RuntimeError("Conxión fallida")
+
     # Método para interceptar los métodos que se llaman en el cliente
     def __getattr__(self, name):
         # Nota: notify es un argumento opcional que se usa para enviar una notificación al servidor
-        def method(*args, notify=False):
+        def method(*args, notify=False, **kwargs):
             self.request_id += 1
             request = {
                 "jsonrpc": "2.0",
                 "method": name,
-                "params": args,
+                "params": list(args) if not kwargs else {**kwargs, "args": list(args)},
                 "id": None if notify else self.request_id
             }
             self._send_request(request)
@@ -32,23 +40,29 @@ class Client:
 
     # Método para enviar una petición al servidor
     def _send_request(self, request):
-        message = json.dumps(request).encode('utf-8')
+        try:
+            print(f'Client Request:\n{request}')
+            message = json.dumps(request).encode('utf-8')
 
-        # Inicializar un contador para llevar la cuenta de los bytes enviados
-        total_sent = 0
+            # Inicializar un contador para llevar la cuenta de los bytes enviados
+            total_sent = 0
 
-        # Continuar enviando hasta que se hayan enviado todos los bytes del mensaje
-        while total_sent < len(message):
-            # Enviar los bytes restantes del mensaje, comenzando desde donde se quedó en la iteración anterior
-            sent = self.sock.send(message[total_sent:])
+            # Continuar enviando hasta que se hayan enviado todos los bytes del mensaje
+            while total_sent < len(message):
+                # Enviar los bytes restantes del mensaje, comenzando desde donde se quedó en la iteración anterior
+                sent = self.sock.send(message[total_sent:])
 
-            # Si no se envía ningún byte, significa que la conexión se ha cerrado inesperadamente
-            if sent == 0:
-                raise RuntimeError("Conexión cerrada")
+                # Si no se envía ningún byte, significa que la conexión se ha cerrado inesperadamente
+                if sent == 0:
+                    raise RuntimeError("Conexión cerrada")
 
-            # Actualizar el total de bytes enviados
-            total_sent += sent
-
+                # Actualizar el total de bytes enviados
+                total_sent += sent
+        except Exception as e:
+            self.sock.close()
+            # Intenta reconectarse si falla la conexion
+            self._setup_connection()
+            self._send_request(request)
 
     # Método para recibir la respuesta del servidor
     def _receive_response(self):
@@ -73,13 +87,13 @@ class Client:
                 continue
 
         response = response_data
+        print(f'Server response:\n{response}')
         # Verifica si hay un error en la respuesta
         if 'error' in response:
             return {
-            "error": {
+            "Error": {
                 "code": response_data['error'].get('code', 'Unknown code'),
-                "message": response_data['error'].get('message', 'Unknown error'),
-                "data": response_data['error'].get('data', None)
+                "message": response_data['error'].get('message', 'Unknown error')
                 }
             }
 
