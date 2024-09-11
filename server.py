@@ -4,16 +4,11 @@ import threading
 
 #Defino una clase Server
 
-# TO DO: Implementar respeustas de array a funciones
+
 
 
 class Server:
 
-    #Constructor de la clase (Falta terminar)
-    #def __init__(self, adress, port):
-     #   self.address = address
-      #  self.port = port
-       # self.methods = {} #Definicion de un diccionario para guardar los procedimientos.
 
     def __init__(self, address, port):
         self.address = address
@@ -63,27 +58,84 @@ class Server:
                 break
 
             request = json_data
-            method = self.methods.get(request['method'])
-            if method:
-                result = method(*request['params'])
+
+            if not isinstance(json_data, dict) or 'jsonrpc' not in json_data or json_data['jsonrpc'] != '2.0' or 'method' not in json_data or not isinstance(json_data['method'], str):
+                # Si la solicitud no es un JSON-RPC válido, se envía un mensaje de error
                 response = {
                     "jsonrpc": "2.0",
-                    "result": result,
-                    "id": request['id']
+                    "error": {
+                        "code": -32600,
+                        "message": "Invalid Request"
+                    },
+                    "id": json_data.get('id', None)  # Usa el id de la solicitud si está presente
                 }
+                self._send_response(response, conn)
 
-                total_sent = 0
-                message = json.dumps(response).encode('utf-8')
-                while total_sent < len(message):
-                    sent = conn.send(message[total_sent:])
+            # Busca el método solicitado en el diccionario de métodos
+            method = self.methods.get(request['method'])
 
-                    if sent == 0:
-                        raise RuntimeError("Conexión cerrada")
+            # Chequea si es notificación
+            is_notification = 'id' not in request or request['id'] is None
 
-                    total_sent += sent
+            if not is_notification:
+                # Si no es notificación, se envía una respuesta
+                if method:
+                    try:
+                        # Si el método es encontrado, se ejecuta. CASO DE ÉXITO
+                        result = method(*request['params'])
+                        response = {
+                            "jsonrpc": "2.0",
+                            "result": result,
+                            "id": request['id']
+                        }
+                    except TypeError:
+                        # Si los parámetros son inválidos, se envía un mensaje de error
+                        response = {
+                        "jsonrpc": "2.0",
+                        "error": {
+                            "code": -32602,
+                            "message": "Invalid params"
+                        },
+                        "id": request['id']
+                        }
+                    except Exception as e:
+                        # Si ocurre un error inesperado, se envía un mensaje de error
+                        response = {
+                            "jsonrpc": "2.0",
+                            "error": {
+                                "code": -32603,
+                                "message": "Internal error"
+                            },
+                            "id": request['id']
+                        }
+                else:
+                    # Si el método no es encontrado, se envía un mensaje de error
+                    response = {
+                        "jsonrpc": "2.0",
+                        "error": {
+                            "code": -32601,
+                            "message": "Method not found"
+                        },
+                        "id": request['id']
+                    }
+
+                self._send_response(response, conn)
 
 
         conn.close()
+
+    def _send_response(self, response, conn):
+
+        total_sent = 0
+        # Codifica la respuesta en un JSON y la envía
+        message = json.dumps(response).encode('utf-8')
+        while total_sent < len(message):
+            sent = conn.send(message[total_sent:])
+            if sent == 0:
+                raise RuntimeError("Conexión cerrada")
+            total_sent += sent
+
+
 
     def close(self):
         self.sock.close()

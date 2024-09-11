@@ -8,7 +8,7 @@ class Client:
     def __init__(self, address, port):
         self.address = address
         self.port = port
-        # Utiliza IPv4 y TCP (¿podría usarse IPv6?)
+        # Utiliza IPv4 y TCP
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((self.address, self.port))
         # Atributo para otorgar un id único a cada petición
@@ -33,8 +33,6 @@ class Client:
     # Método para enviar una petición al servidor
     def _send_request(self, request):
         message = json.dumps(request).encode('utf-8')
-        # Utilizo sendall, podría usar send y un bucle para asegurarme de que se envíe todo el mensaje
-        # self.sock.sendall(message.encode('utf-8'))
 
         # Inicializar un contador para llevar la cuenta de los bytes enviados
         total_sent = 0
@@ -74,14 +72,18 @@ class Client:
                 # Si no es completo cointinuar recibiendo datos
                 continue
 
-        # Convertir la respuesta a un diccionario
-        response_data = json.loads(b''.join(response_chunks).decode('utf-8'))
-
+        response = response_data
         # Verifica si hay un error en la respuesta
-        if 'error' in response_data:
-            raise Exception(f"Error {response_data['error']['code']}: {response_data['error']['message']} - {response_data['error'].get('data', '')}")
+        if 'error' in response:
+            return {
+            "error": {
+                "code": response_data['error'].get('code', 'Unknown code'),
+                "message": response_data['error'].get('message', 'Unknown error'),
+                "data": response_data['error'].get('data', None)
+                }
+            }
 
-        return response_data.get('result')
+        return response.get('result')
 
     # Método para cerrar la conexión con el servidor
     def close(self):
