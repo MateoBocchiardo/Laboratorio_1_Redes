@@ -1,10 +1,8 @@
 from server import Server
+import math
 
-def multiplicacion(*args):
-    res = 1
-    for arg in args:
-        res *= arg
-    return res
+def logaritmo(numero, base=10):
+    return math.log(numero, base)
 
 
 def concatenar(separador, *args):
@@ -24,11 +22,11 @@ def reordenar(a, b, c, d):
 if __name__ == '__main__':
 
     # Terminales locales
-    # server = Server('localhost', 5001)
+    server = Server('localhost', 5001)
 
-    server = Server('200.100.0.15', 5001)
+    #server = Server('200.100.0.15', 5001)
     server.add_method(concatenar)
-    server.add_method(multiplicacion)
+    server.add_method(logaritmo)
     server.add_method(maximo_comun_divisor)
     server.add_method(reordenar)
     server.serve()
