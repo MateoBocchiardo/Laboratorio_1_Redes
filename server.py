@@ -10,9 +10,9 @@ import threading
 class Server:
 
 
-    def __init__(self, address, port):
-        self.address = address
-        self.port = port
+    def __init__(self, address_port):
+        self.address = address_port[0]
+        self.port = address_port[1]
         # Diccionario para guardar los métodos
         self.methods = {}
         # Crea un socket IPv4 y TCP

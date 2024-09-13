@@ -44,6 +44,8 @@ class Client:
             print(f'Client Request:\n{request}')
             message = json.dumps(request).encode('utf-8')
 
+            self._setup_connection()
+
             # Inicializar un contador para llevar la cuenta de los bytes enviados
             total_sent = 0
 
@@ -58,6 +60,7 @@ class Client:
 
                 # Actualizar el total de bytes enviados
                 total_sent += sent
+            print("Request enviada")
         except Exception as e:
             self.sock.close()
             # Intenta reconectarse si falla la conexion
@@ -73,27 +76,28 @@ class Client:
         while True:
             # Recibe los datos del servidor en fragmentos
             chunk = self.sock.recv(buffer_size)
-            if not chunk:
-                # Si no hay más datos, salir del bucle
-                break
             response_chunks.append(chunk)
+            data = b''.join(response_chunks).decode('utf-8')
 
-            # Chequea si la respuesta es un JSON válido
-            try:
-                response_data = json.loads(b''.join(response_chunks).decode('utf-8'))
-                break
-            except json.JSONDecodeError:
-                # Si no es completo cointinuar recibiendo datos
+            # Chequea si la respuesta esta completa
+            if data.count('{') == data.count('}') and data.count('{') > 0:
+                try:
+                    json_data = json.loads(data)
+                    break
+                except json.JSONDecodeError:
+                    print(f"Raw data: {data}")
+                    raise RuntimeError("Error de análisis: JSON inválido recibido")
+            else:
                 continue
 
-        response = response_data
+        response = json_data
         print(f'Server response:\n{response}')
         # Verifica si hay un error en la respuesta
         if 'error' in response:
             return {
             "Error": {
-                "code": response_data['error'].get('code', 'Unknown code'),
-                "message": response_data['error'].get('message', 'Unknown error')
+                "code": response['error'].get('code', 'Unknown code'),
+                "message": response['error'].get('message', 'Unknown error')
                 }
             }
 
