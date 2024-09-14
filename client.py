@@ -60,7 +60,6 @@ class Client:
 
                 # Actualizar el total de bytes enviados
                 total_sent += sent
-            print("Request enviada")
         except Exception as e:
             self.sock.close()
             # Intenta reconectarse si falla la conexion
@@ -85,7 +84,6 @@ class Client:
                     json_data = json.loads(data)
                     break
                 except json.JSONDecodeError:
-                    print(f"Raw data: {data}")
                     raise RuntimeError("Error de análisis: JSON inválido recibido")
             else:
                 continue

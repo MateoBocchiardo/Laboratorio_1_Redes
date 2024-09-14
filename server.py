@@ -63,7 +63,6 @@ class Server:
                 continue
 
         if not json_data:
-            #break
             conn.close()
             return
 
@@ -80,7 +79,6 @@ class Server:
                 "id": json_data.get('id', None)  # Usa el id de la solicitud si está presente
             }
             self._send_response(response, conn)
-            #continue
             conn.close()
             return
 
@@ -103,7 +101,6 @@ class Server:
                     "id": request['id']
                 }
                 self._send_response(response, conn)
-                #continue
                 conn.close()
                 return
 
@@ -154,6 +151,9 @@ class Server:
             self._send_response(response, conn)
 
 
+            conn.close()
+            return
+        else:
             conn.close()
             return
 
