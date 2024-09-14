@@ -2,10 +2,6 @@ import socket
 import json
 import threading
 
-#Defino una clase Server
-
-
-
 
 class Server:
 
@@ -37,38 +33,64 @@ class Server:
 
         buffer_size = 10
 
+
+        response_chunks = []
+
         while True:
-            response_chunks = []
+            # Recibe los datos del servidor en fragmentos
+            chunk = conn.recv(buffer_size)
+            response_chunks.append(chunk)
+            data = b''.join(response_chunks).decode('utf-8')
+            #Chequea si el buffer esta completo
+            if data.count('{') == data.count('}'):
+                # Chequea si la respuesta es un JSON válido
+                try:
+                    json_data = json.loads(data)
+                    break
+                except json.JSONDecodeError:
+                    response = {
+                        "jsonrpc": "2.0",
+                        "error": {"code": -32700, "message": "Parse error"},
+                        "id": request['id']
+                    }
+                    self._send_response(response, conn)
+                    conn.close()
+                    return
+            else:
+                # Si no es completo cointinuar recibiendo datos
+                continue
 
-            while True:
-                # Recibe los datos del servidor en fragmentos
-                chunk = conn.recv(buffer_size)
-                response_chunks.append(chunk)
-                data = b''.join(response_chunks).decode('utf-8')
-                #Chequea si el buffer esta completo
-                if data.count('{') == data.count('}'):
-                    # Chequea si la respuesta es un JSON válido
-                    try:
-                        json_data = json.loads(data)
-                        break
-                    except json.JSONDecodeError:
-                        response = {
-                            "jsonrpc": "2.0",
-                            "error": {"code": -32700, "message": "Error de análisis"},
-                            "id": request['id']
-                        }
-                        self._send_response(response, conn)
-                else:
-                    # Si no es completo cointinuar recibiendo datos
-                    continue
+        if not json_data:
+            conn.close()
+            return
 
-            if not json_data:
-                break
+        request = json_data
 
-            request = json_data
+        if not isinstance(json_data, dict) or 'jsonrpc' not in json_data or json_data['jsonrpc'] != '2.0' or 'method' not in json_data or not isinstance(json_data['method'], str):
+            # Si la solicitud no es un JSON-RPC válido, se envía un mensaje de error
+            response = {
+                "jsonrpc": "2.0",
+                "error": {
+                    "code": -32600,
+                    "message": "Invalid Request"
+                },
+                "id": json_data.get('id', None)  # Usa el id de la solicitud si está presente
+            }
+            self._send_response(response, conn)
+            conn.close()
+            return
 
-            if not isinstance(json_data, dict) or 'jsonrpc' not in json_data or json_data['jsonrpc'] != '2.0' or 'method' not in json_data or not isinstance(json_data['method'], str):
-                # Si la solicitud no es un JSON-RPC válido, se envía un mensaje de error
+        # Busca el método solicitado en el diccionario de métodos
+        method = self.methods.get(request['method'])
+
+        # Chequea si es notificación
+        is_notification = 'id' not in request or request['id'] is None
+
+        if not is_notification:
+            # Si no es notificación, se envía una respuesta
+            if not method:
+                # Si el método no es encontrado, se envía un mensaje de error
+
                 response = {
                     "jsonrpc": "2.0",
                     "error": {
@@ -78,10 +100,9 @@ class Server:
                     "id": json_data.get('id', None)  # Usa el id de la solicitud si está presente
                 }
                 self._send_response(response, conn)
-                continue
+                conn.close()
+                return
 
-            # Busca el método solicitado en el diccionario de métodos
-            method = self.methods.get(request['method'])
 
             # Chequea si es notificación
             is_notification = 'id' not in request or request['id'] is None
@@ -148,7 +169,12 @@ class Server:
                 self._send_response(response, conn)
 
 
-        conn.close()
+            conn.close()
+            return
+        else:
+            conn.close()
+            return
+
 
     def _send_response(self, response, conn):
 
