@@ -2,10 +2,6 @@ import socket
 import json
 import threading
 
-#Defino una clase Server
-
-
-
 
 class Server:
 
@@ -37,7 +33,7 @@ class Server:
 
         buffer_size = 10
 
-        #while True:
+
         response_chunks = []
 
         while True:
@@ -54,16 +50,17 @@ class Server:
                 except json.JSONDecodeError:
                     response = {
                         "jsonrpc": "2.0",
-                        "error": {"code": -32700, "message": "Error de análisis"},
+                        "error": {"code": -32700, "message": "Parse error"},
                         "id": request['id']
                     }
                     self._send_response(response, conn)
+                    conn.close()
+                    return
             else:
                 # Si no es completo cointinuar recibiendo datos
                 continue
 
         if not json_data:
-            #break
             conn.close()
             return
 
@@ -80,12 +77,32 @@ class Server:
                 "id": json_data.get('id', None)  # Usa el id de la solicitud si está presente
             }
             self._send_response(response, conn)
-            #continue
             conn.close()
             return
 
         # Busca el método solicitado en el diccionario de métodos
         method = self.methods.get(request['method'])
+
+        # Chequea si es notificación
+        is_notification = 'id' not in request or request['id'] is None
+
+        if not is_notification:
+            # Si no es notificación, se envía una respuesta
+            if not method:
+                # Si el método no es encontrado, se envía un mensaje de error
+
+                response = {
+                    "jsonrpc": "2.0",
+                    "error": {
+                        "code": -32600,
+                        "message": "Invalid Request"
+                    },
+                    "id": json_data.get('id', None)  # Usa el id de la solicitud si está presente
+                }
+                self._send_response(response, conn)
+                conn.close()
+                return
+
 
         # Chequea si es notificación
         is_notification = 'id' not in request or request['id'] is None
@@ -156,6 +173,10 @@ class Server:
 
             conn.close()
             return
+        else:
+            conn.close()
+            return
+
 
     def _send_response(self, response, conn):
 
