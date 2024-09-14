@@ -2,10 +2,6 @@ import socket
 import json
 import threading
 
-#Defino una clase Server
-
-
-
 
 class Server:
 
@@ -37,7 +33,6 @@ class Server:
 
         buffer_size = 10
 
-        #while True:
         response_chunks = []
 
         while True:
@@ -52,18 +47,20 @@ class Server:
                     json_data = json.loads(data)
                     break
                 except json.JSONDecodeError:
+                    print("Parse error")
                     response = {
                         "jsonrpc": "2.0",
-                        "error": {"code": -32700, "message": "Error de análisis"},
+                        "error": {"code": -32700, "message": "Parse error"},
                         "id": request['id']
                     }
                     self._send_response(response, conn)
+                    conn.close()
+                    return
             else:
                 # Si no es completo cointinuar recibiendo datos
                 continue
 
         if not json_data:
-            #break
             conn.close()
             return
 
@@ -80,7 +77,6 @@ class Server:
                 "id": json_data.get('id', None)  # Usa el id de la solicitud si está presente
             }
             self._send_response(response, conn)
-            #continue
             conn.close()
             return
 
@@ -103,7 +99,6 @@ class Server:
                     "id": request['id']
                 }
                 self._send_response(response, conn)
-                #continue
                 conn.close()
                 return
 
@@ -154,6 +149,9 @@ class Server:
             self._send_response(response, conn)
 
 
+            conn.close()
+            return
+        else:
             conn.close()
             return
 
