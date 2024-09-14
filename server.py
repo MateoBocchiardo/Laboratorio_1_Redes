@@ -120,7 +120,6 @@ class Server:
                     "id": request['id']
                 }
                 self._send_response(response, conn)
-                #continue
                 conn.close()
                 return
 
@@ -176,7 +175,6 @@ class Server:
         else:
             conn.close()
             return
-
 
     def _send_response(self, response, conn):
 
