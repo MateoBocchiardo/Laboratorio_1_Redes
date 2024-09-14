@@ -33,6 +33,7 @@ class Server:
 
         buffer_size = 10
 
+
         response_chunks = []
 
         while True:
@@ -89,63 +90,83 @@ class Server:
             # Si no es notificación, se envía una respuesta
             if not method:
                 # Si el método no es encontrado, se envía un mensaje de error
+
                 response = {
                     "jsonrpc": "2.0",
                     "error": {
-                        "code": -32601,
-                        "message": "Method not found"
+                        "code": -32600,
+                        "message": "Invalid Request"
                     },
-                    "id": request['id']
+                    "id": json_data.get('id', None)  # Usa el id de la solicitud si está presente
                 }
                 self._send_response(response, conn)
                 conn.close()
                 return
 
 
-            try:
-                # Si el método es encontrado, se ejecuta. CASO DE ÉXITO
-                if 'params' in request:
-                    # Caso con keyword arguments
-                    if isinstance(request['params'], dict):
-                        args = request['params'].get('args', [])
-                        kwargs = {k: v for k, v in request['params'].items() if k != 'args'}
+            # Chequea si es notificación
+            is_notification = 'id' not in request or request['id'] is None
 
-                        # Llama al método con los argumentos y keyword arguments
-                        result = method(*args, **kwargs)
+            if not is_notification:
+                # Si no es notificación, se envía una respuesta
+                if not method:
+                    # Si el método no es encontrado, se envía un mensaje de error
+                    response = {
+                        "jsonrpc": "2.0",
+                        "error": {
+                            "code": -32601,
+                            "message": "Method not found"
+                        },
+                        "id": request['id']
+                    }
+                    self._send_response(response, conn)
+                    continue
+
+
+                try:
+                    # Si el método es encontrado, se ejecuta. CASO DE ÉXITO
+                    if 'params' in request:
+                        # Caso con keyword arguments
+                        if isinstance(request['params'], dict):
+                            args = request['params'].get('args', [])
+                            kwargs = {k: v for k, v in request['params'].items() if k != 'args'}
+
+                            # Llama al método con los argumentos y keyword arguments
+                            result = method(*args, **kwargs)
+                        else:
+                        # Caso sin keyword arguments
+                            result = method(*list(request['params']))
                     else:
-                    # Caso sin keyword arguments
-                        result = method(*list(request['params']))
-                else:
-                # Caso sin parametros
-                    result = method()
+                    # Caso sin parametros
+                        result = method()
 
-                response = {
-                    "jsonrpc": "2.0",
-                    "result": result,
-                    "id": request['id']
-                }
-            except TypeError:
-                # Si los parámetros son inválidos, se envía un mensaje de error
-                response = {
-                "jsonrpc": "2.0",
-                "error": {
-                    "code": -32602,
-                    "message": "Invalid params"
-                },
-                "id": request['id']
-                }
-            except Exception as e:
-                # Si ocurre un error inesperado, se envía un mensaje de error
-                response = {
+                    response = {
+                        "jsonrpc": "2.0",
+                        "result": result,
+                        "id": request['id']
+                    }
+                except TypeError:
+                    # Si los parámetros son inválidos, se envía un mensaje de error
+                    response = {
                     "jsonrpc": "2.0",
                     "error": {
-                        "code": -32603,
-                        "message": "Internal error"
+                        "code": -32602,
+                        "message": "Invalid params"
                     },
                     "id": request['id']
-                }
+                    }
+                except Exception as e:
+                    # Si ocurre un error inesperado, se envía un mensaje de error
+                    response = {
+                        "jsonrpc": "2.0",
+                        "error": {
+                            "code": -32603,
+                            "message": "Internal error"
+                        },
+                        "id": request['id']
+                    }
 
-            self._send_response(response, conn)
+                self._send_response(response, conn)
 
 
             conn.close()
@@ -153,6 +174,7 @@ class Server:
         else:
             conn.close()
             return
+
 
     def _send_response(self, response, conn):
 
