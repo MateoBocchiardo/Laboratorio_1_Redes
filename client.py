@@ -84,7 +84,6 @@ class Client:
                     json_data = json.loads(data)
                     break
                 except json.JSONDecodeError:
-                    print(f"Raw data: {data}")
                     raise RuntimeError("Error de análisis: JSON inválido recibido")
             else:
                 continue

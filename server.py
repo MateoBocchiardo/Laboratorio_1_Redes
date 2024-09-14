@@ -47,7 +47,6 @@ class Server:
                     json_data = json.loads(data)
                     break
                 except json.JSONDecodeError:
-                    print("Parse error")
                     response = {
                         "jsonrpc": "2.0",
                         "error": {"code": -32700, "message": "Parse error"},
