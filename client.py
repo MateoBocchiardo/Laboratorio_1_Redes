@@ -8,9 +8,6 @@ class Client:
     def __init__(self, address, port):
         self.address = address
         self.port = port
-        # Utiliza IPv4 y TCP
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect((self.address, self.port))
         # Atributo para otorgar un id único a cada petición
         self.request_id = 0
 
@@ -36,6 +33,8 @@ class Client:
             self._send_request(request)
             if not notify:
                 return self._receive_response()
+            else:
+                self.sock.close()
         return method
 
     # Método para enviar una petición al servidor
@@ -99,10 +98,11 @@ class Client:
                 }
             }
 
+        self.sock.close()
         return response.get('result')
 
     # Método para cerrar la conexión con el servidor
-    def close(self):
+    def _close(self):
         self.sock.close()
 
 # Función para crear una instancia de la clase Client

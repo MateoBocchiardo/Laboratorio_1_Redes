@@ -52,10 +52,3 @@ if __name__ == '__main__':
     print('Error: Menos parametros de los esperados')
     print(f'{client_1.resta(1)}\n')
 
-
-
-
-
-
-    client_1.close()
-    client_2.close()
