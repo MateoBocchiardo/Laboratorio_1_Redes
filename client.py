@@ -23,18 +23,24 @@ class Client:
     def __getattr__(self, name):
         # Nota: notify es un argumento opcional que se usa para enviar una notificación al servidor
         def method(*args, notify=False, **kwargs):
+
+            if args and kwargs:
+                print('Error: No se pueden pasar argumentos posicionales y argumentos con nombre al mismo tiempo')
+                self._close()
+                return
+
             self.request_id += 1
             request = {
                 "jsonrpc": "2.0",
                 "method": name,
-                "params": list(args) if not kwargs else {**kwargs, "args": list(args)},
+                "params": list(args) if not kwargs else {**kwargs},
                 "id": None if notify else self.request_id
             }
             self._send_request(request)
             if not notify:
                 return self._receive_response()
             else:
-                self.sock.close()
+                self._close()
         return method
 
     # Método para enviar una petición al servidor
@@ -60,7 +66,7 @@ class Client:
                 # Actualizar el total de bytes enviados
                 total_sent += sent
         except Exception as e:
-            self.sock.close()
+            self._close()
             # Intenta reconectarse si falla la conexion
             self._setup_connection()
             self._send_request(request)
@@ -98,7 +104,7 @@ class Client:
                 }
             }
 
-        self.sock.close()
+        self._close()
         return response.get('result')
 
     # Método para cerrar la conexión con el servidor

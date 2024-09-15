@@ -90,27 +90,6 @@ class Server:
             # Si no es notificación, se envía una respuesta
             if not method:
                 # Si el método no es encontrado, se envía un mensaje de error
-
-                response = {
-                    "jsonrpc": "2.0",
-                    "error": {
-                        "code": -32600,
-                        "message": "Invalid Request"
-                    },
-                    "id": json_data.get('id', None)  # Usa el id de la solicitud si está presente
-                }
-                self._send_response(response, conn)
-                conn.close()
-                return
-
-
-        # Chequea si es notificación
-        is_notification = 'id' not in request or request['id'] is None
-
-        if not is_notification:
-            # Si no es notificación, se envía una respuesta
-            if not method:
-                # Si el método no es encontrado, se envía un mensaje de error
                 response = {
                     "jsonrpc": "2.0",
                     "error": {
@@ -129,13 +108,11 @@ class Server:
                 if 'params' in request:
                     # Caso con keyword arguments
                     if isinstance(request['params'], dict):
-                        args = request['params'].get('args', [])
-                        kwargs = {k: v for k, v in request['params'].items() if k != 'args'}
-
-                        # Llama al método con los argumentos y keyword arguments
-                        result = method(*args, **kwargs)
+                        kwargs = {k: v for k, v in request['params'].items()}
+                        # Llama al método con keyword arguments
+                        result = method(**kwargs)
                     else:
-                    # Caso sin keyword arguments
+                    # Caso positional arguments
                         result = method(*list(request['params']))
                 else:
                 # Caso sin parametros
@@ -146,6 +123,7 @@ class Server:
                     "result": result,
                     "id": request['id']
                 }
+
             except TypeError:
                 # Si los parámetros son inválidos, se envía un mensaje de error
                 response = {

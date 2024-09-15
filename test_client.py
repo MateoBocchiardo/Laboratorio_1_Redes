@@ -52,3 +52,6 @@ if __name__ == '__main__':
     print('Error: Menos parametros de los esperados')
     print(f'{client_1.resta(1)}\n')
 
+    print('Error: Keyword argument y positional arguments a la vez')
+    print(f'{client_1.resta(1, y=2)}\n')
+
